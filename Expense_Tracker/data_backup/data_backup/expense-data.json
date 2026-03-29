@@ -1,0 +1,45 @@
+{
+  "transactions": [
+    {
+      "id": "323a8e45-92ff-4f5d-8ea4-8abff5f11a2f",
+      "date": "2026-03-29T21:39:52.265Z",
+      "description": "Income",
+      "amount": 4060,
+      "type": "income",
+      "category": "",
+      "month": 0,
+      "half": "1"
+    },
+    {
+      "id": "c983c87c-cc87-4de6-bb87-85265a7ca8d5",
+      "date": "2026-03-29T21:40:23.381Z",
+      "description": "Income",
+      "amount": 6000,
+      "type": "income",
+      "category": "",
+      "month": 0,
+      "half": "2"
+    },
+    {
+      "id": "1c700052-e8f7-4b89-8461-4b21f7884da0",
+      "date": "2026-03-29T21:40:34.813Z",
+      "description": "Expense",
+      "amount": 4100,
+      "type": "expense",
+      "category": "",
+      "month": 0,
+      "half": "1"
+    },
+    {
+      "id": "33478a03-dc3d-4c63-b8c2-cd199edf5226",
+      "date": "2026-03-29T21:40:56.765Z",
+      "description": "Expense",
+      "amount": 5930,
+      "type": "expense",
+      "category": "",
+      "month": 0,
+      "half": "2"
+    }
+  ],
+  "notes": {}
+}
