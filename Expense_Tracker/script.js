@@ -72,6 +72,8 @@ let skipFolderAutoSave = false;
 let transactions = [];
 let notes = {};
 let editId = null;
+let lastSyncedBundleSignature = '';
+let syncInFlight = false;
 
 if (notesInput) {
   notesInput.value = '';
@@ -149,6 +151,14 @@ function saveBundleToLocalStorage(bundle) {
 
 function hasPageData(bundle) {
   return bundle.transactions.length > 0 || Object.keys(bundle.notes).length > 0;
+}
+
+function getBundleSignature(bundle) {
+  return JSON.stringify(bundle);
+}
+
+function markBundleSynced(bundle) {
+  lastSyncedBundleSignature = getBundleSignature(bundle);
 }
 
 async function apiRequest(path, options = {}) {
@@ -241,6 +251,15 @@ function buildBundle() {
   };
 }
 
+function applyBundle(bundle) {
+  transactions = (bundle.transactions || []).map((transaction) => ({
+    ...transaction,
+    amount: Number(transaction.amount)
+  }));
+  notes = bundle.notes || {};
+  markBundleSynced(buildBundle());
+}
+
 async function loadBundleFromBackend() {
   const scope = encodeURIComponent(PAGE_CONFIG.scope);
   return apiRequest(`${API_BASE}/page-data?scope=${scope}`);
@@ -316,6 +335,7 @@ async function resetBundleInSupabase() {
 async function persistCurrentState() {
   const bundle = buildBundle();
   saveBundleToLocalStorage(bundle);
+  markBundleSynced(bundle);
 
   const backendAvailable = await detectBackendAvailability();
   if (!backendAvailable) {
@@ -368,6 +388,53 @@ async function initializeData() {
     console.error('Configured backend unavailable, loading browser storage fallback.', error);
     return localBundle;
   }
+}
+
+async function syncFromBackendIfNeeded() {
+  if (syncInFlight || editId) {
+    return;
+  }
+
+  const backendAvailable = await detectBackendAvailability();
+  if (!backendAvailable || backendMode === 'browser') {
+    return;
+  }
+
+  syncInFlight = true;
+  try {
+    const incomingBundle = backendMode === 'local-json'
+      ? await loadBundleFromBackend()
+      : await loadBundleFromSupabase();
+    const incomingSignature = getBundleSignature(incomingBundle);
+
+    if (incomingSignature !== lastSyncedBundleSignature) {
+      applyBundle(incomingBundle);
+      saveBundleToLocalStorage(buildBundle());
+      renderNotes(notesMonth?.value || 'all');
+      computeStats();
+      renderTransactions(searchInput.value);
+    }
+  } catch (error) {
+    console.error('Background sync failed.', error);
+  } finally {
+    syncInFlight = false;
+  }
+}
+
+function setupCrossBrowserSync() {
+  setInterval(() => {
+    syncFromBackendIfNeeded();
+  }, 10000);
+
+  window.addEventListener('focus', () => {
+    syncFromBackendIfNeeded();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncFromBackendIfNeeded();
+    }
+  });
 }
 
 function exportDatabase() {
@@ -936,15 +1003,11 @@ if ('serviceWorker' in navigator) {
 
 async function initializeApp() {
   const bundle = await initializeData();
-  transactions = bundle.transactions.map((transaction) => ({
-    ...transaction,
-    amount: Number(transaction.amount)
-  }));
-  notes = bundle.notes || {};
-
+  applyBundle(bundle);
   renderNotes(notesMonth?.value || 'all');
   computeStats();
   renderTransactions();
+  setupCrossBrowserSync();
 }
 
 initializeApp().catch((error) => console.error('Initialization error', error));
