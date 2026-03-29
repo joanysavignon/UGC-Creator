@@ -1,0 +1,25 @@
+{
+  "transactions": [
+    {
+      "id": "b6db17c3-3d2c-4b98-8a1f-9196b15e2647",
+      "date": "2026-03-29T21:14:08.652Z",
+      "description": "sssds",
+      "amount": 54435,
+      "type": "expense",
+      "category": "",
+      "month": 0,
+      "half": "1"
+    },
+    {
+      "id": "dcae2021-8272-417f-ac33-666e8dcd3c5b",
+      "date": "2026-03-29T21:15:51.285Z",
+      "description": "dsds",
+      "amount": 454545,
+      "type": "expense",
+      "category": "4545",
+      "month": 0,
+      "half": "1"
+    }
+  ],
+  "notes": {}
+}
