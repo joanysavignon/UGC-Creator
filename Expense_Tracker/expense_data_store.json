@@ -1,0 +1,18 @@
+{
+  "general": {
+    "transactions": [],
+    "notes": {}
+  },
+  "creditcards": {
+    "transactions": [],
+    "notes": {}
+  },
+  "bills": {
+    "transactions": [],
+    "notes": {}
+  },
+  "savings": {
+    "transactions": [],
+    "notes": {}
+  }
+}
