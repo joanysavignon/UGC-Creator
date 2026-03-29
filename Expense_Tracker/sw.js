@@ -1,4 +1,4 @@
-const CACHE_NAME = 'expense-tracker-v2.1.0';
+const CACHE_NAME = 'expense-tracker-v2.2.0';
 const urlsToCache = [
   './',
   './index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Fetch from Cache
+// Prefer fresh files from the network so GitHub Pages updates show up quickly.
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -34,8 +34,15 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request)
-      .then((response) => response || fetch(request))
+    fetch(request)
+      .then((response) => {
+        if (request.method === 'GET' && url.origin === self.location.origin) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
 
