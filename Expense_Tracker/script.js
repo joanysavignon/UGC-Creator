@@ -29,6 +29,7 @@ let backendEnabled = false;
 let backendCheckComplete = false;
 let backendMode = 'browser';
 let supabaseClient = null;
+let backendStatusNote = '';
 
 const incomeValue = document.getElementById('incomeValue');
 const expenseValue = document.getElementById('expenseValue');
@@ -74,6 +75,45 @@ let editId = null;
 
 if (notesInput) {
   notesInput.value = '';
+}
+
+function ensureBackendStatusElement() {
+  let statusEl = document.getElementById('backendStatus');
+  if (statusEl) {
+    return statusEl;
+  }
+
+  const topbar = document.querySelector('.topbar');
+  if (!topbar || !topbar.firstElementChild) {
+    return null;
+  }
+
+  statusEl = document.createElement('p');
+  statusEl.id = 'backendStatus';
+  statusEl.style.margin = '.35rem 0 0';
+  statusEl.style.fontSize = '.88rem';
+  statusEl.style.fontWeight = '600';
+  topbar.firstElementChild.appendChild(statusEl);
+  return statusEl;
+}
+
+function updateBackendStatus(mode, note = '') {
+  backendMode = mode;
+  backendStatusNote = note;
+
+  const statusEl = ensureBackendStatusElement();
+  if (!statusEl) {
+    return;
+  }
+
+  const labels = {
+    'local-json': 'Storage: Local JSON file',
+    supabase: 'Storage: Supabase',
+    browser: 'Storage: Browser only'
+  };
+
+  statusEl.textContent = note ? `${labels[mode] || 'Storage'} - ${note}` : (labels[mode] || 'Storage');
+  statusEl.style.color = mode === 'browser' ? '#b45309' : '#0f766e';
 }
 
 function parseJsonStorage(key, fallback) {
@@ -140,20 +180,21 @@ async function detectBackendAvailability() {
 
   if (!window.location.protocol.startsWith('http')) {
     backendEnabled = false;
+    updateBackendStatus('browser', 'opened from file');
     return backendEnabled;
   }
 
   try {
     await apiRequest(`${API_BASE}/health`);
     backendEnabled = true;
-    backendMode = 'local-json';
+    updateBackendStatus('local-json', 'connected');
   } catch (error) {
     if (hasSupabaseConfig()) {
       backendEnabled = true;
-      backendMode = 'supabase';
+      updateBackendStatus('supabase', 'configured');
     } else {
       backendEnabled = false;
-      backendMode = 'browser';
+      updateBackendStatus('browser', 'fallback active');
       console.info('No local backend or Supabase config detected, using browser storage.', error);
     }
   }
@@ -289,8 +330,8 @@ async function persistCurrentState() {
     }
   } catch (error) {
     backendEnabled = false;
-    backendMode = 'browser';
     backendCheckComplete = true;
+    updateBackendStatus('browser', 'save failed');
     console.error('Unable to persist data to the configured backend, continuing with browser storage only.', error);
   }
 }
@@ -308,6 +349,7 @@ async function initializeData() {
       ? await loadBundleFromBackend()
       : await loadBundleFromSupabase();
     backendEnabled = true;
+    updateBackendStatus(backendMode, 'connected');
 
     if (!hasPageData(backendBundle) && hasPageData(localBundle)) {
       if (backendMode === 'local-json') {
@@ -321,8 +363,8 @@ async function initializeData() {
     return backendBundle;
   } catch (error) {
     backendEnabled = false;
-    backendMode = 'browser';
     backendCheckComplete = true;
+    updateBackendStatus('browser', 'backend unavailable');
     console.error('Configured backend unavailable, loading browser storage fallback.', error);
     return localBundle;
   }
@@ -827,7 +869,7 @@ resetData.addEventListener('click', async () => {
       }
     } catch (error) {
       backendEnabled = false;
-      backendMode = 'browser';
+      updateBackendStatus('browser', 'reset failed');
       console.error('Unable to reset configured backend data, reset completed locally only.', error);
     }
   }
